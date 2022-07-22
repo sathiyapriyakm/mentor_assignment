@@ -1,6 +1,7 @@
 import { MongoClient } from "mongodb";
 import express from "express";
 import dotenv from "dotenv";
+import { ObjectId } from "mongodb";
 dotenv.config();
 
 const app = express();
@@ -25,6 +26,7 @@ app.get("/", (req, res) => {
   res.send("Welcome to mentor assignment APP");
 });
 
+//1.Write API to create Mentor
 app.post("/createStudent", async function(req, res){
   const {studentName}=req.body;
   const data= {
@@ -37,6 +39,7 @@ app.post("/createStudent", async function(req, res){
   res.send(result);
 });
 
+//2.Write API to create Student
 app.post("/createMentor", async function(req, res){ 
   const {mentorName}=req.body;
   const data= {
@@ -47,6 +50,11 @@ app.post("/createMentor", async function(req, res){
   const result = await client.db("mentorAssignment").collection("Mentors").insertOne(data)
   res.send(result);
 });
+
+//3. Write API to Assign a student to Mentor
+// Select one mentor and Add multiple Student 
+// A student who has a mentor should not be shown in List
+
 
 app.put("/assignMentor", async function(req, res){ 
   const {mentorName,students}=req.body;
@@ -80,6 +88,10 @@ app.put("/assignMentor", async function(req, res){
     res.send(`students already have mentor`)
   }
   });
+
+
+  // 4. Write API to Assign or Change Mentor for particular Student
+// Select One Student and Assign one Mentor
 
   app.put("/changeMentor", async function(req, res){ 
     const {studentName,mentorName}=req.body;
@@ -142,3 +154,28 @@ app.put("/assignMentor", async function(req, res){
       }
     }
     );
+
+
+    //5.Write API to show all students for a particular mentor
+
+    app.get('/getAllStudentsOf/:mentorName',async function (request, response) {
+      const {mentorName}=request.params;
+      const mentorFromDB=await client.db("mentorAssignment").collection("Mentors").findOne({"mentorName":mentorName});
+      const studentsList=mentorFromDB.student_ID;
+      if(studentsList.length>0){
+          let studentsName=[];
+          for(let i=0;i<studentsList.length;i++) {
+            const studentFromDB=await client.db("mentorAssignment").collection("students").findOne({"_id":ObjectId(studentsList[i])});
+            studentsName.push(studentFromDB.studentName)
+          }
+          studentsName=studentsName.join(",");
+          response.send(`students of ${mentorName} are ${studentsName}`);
+      }else{
+        response.send(` ${mentorName} has no students`);
+      }
+      })
+
+
+
+
+
